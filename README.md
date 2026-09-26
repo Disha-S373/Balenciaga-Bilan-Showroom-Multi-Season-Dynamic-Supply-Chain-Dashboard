@@ -57,6 +57,12 @@ whitespace normalization on status fields, code-change-aware matching keys, and
 season-label standardization — see
 [`power-query/transformations.m`](power-query/transformations.m)
 
+**Python (pandas)** — pre-load consolidation and validation: aggregating each
+season's raw extract to one row per item, and building the pre/post-activities
+comparison (match-key fallback on code changes, status flagging, delta
+calculations) before either file goes anywhere near Power BI — see
+[`python/consolidation.py`](python/consolidation.py)
+
 **Report pages**: order book catalogue, cancellation deep-dive, season timeline /
 milestone tracker, season-comparison summary
 
@@ -88,6 +94,8 @@ milestone tracker, season-comparison summary
   html-generation.dax    — DAX measures that generate full HTML pages
 /power-query/
   transformations.m      — ingestion, cleaning, matching-key logic
+/python/
+  consolidation.py       — source file consolidation & pre/post comparison
 README.md
 ```
 
@@ -98,6 +106,4 @@ README.md
 
 ## Note
 
-- Screenshots of visuals built using the data in Power BI added 
-
-
+- Screenshots of visuals built using the data in Power BI have been added as well
