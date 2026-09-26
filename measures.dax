@@ -1,0 +1,62 @@
+// BAL_BILAN — sample measures (genericized, no proprietary naming)
+// Table: OrderBook | Columns: ItemCode, Season_Label, WHLS_Qty, RTL_Qty, VIC_Qty,
+// TotalQty, FinalStatus, TotalValue
+
+Total WHLS Value (K) =
+DIVIDE(SUM(OrderBook[WHLS_Value]), 1000)
+
+Total RTL Value (K) =
+DIVIDE(SUM(OrderBook[RTL_Value]), 1000)
+
+Total Distinct Items =
+DISTINCTCOUNT(OrderBook[ItemCode])
+
+Cancelled WHLS Units =
+CALCULATE(
+    DISTINCTCOUNT(OrderBook[ItemCode]),
+    OrderBook[FinalStatus] = "OUT",
+    OrderBook[WHLS_Qty] > 0
+)
+
+Total WHLS Units =
+CALCULATE(
+    DISTINCTCOUNT(OrderBook[ItemCode]),
+    OrderBook[WHLS_Qty] > 0
+)
+
+% Cancelled WHLS =
+DIVIDE(
+    [Cancelled WHLS Units],
+    [Total WHLS Units],
+    0
+)
+
+Kept Items Total =
+CALCULATE(
+    DISTINCTCOUNT(OrderBook[ItemCode]),
+    OrderBook[FinalStatus] = "KEEP"
+)
+
+Serve-From-Stock Items =
+CALCULATE(
+    DISTINCTCOUNT(OrderBook[ItemCode]),
+    OrderBook[FinalStatus] = "SERVE"
+)
+
+Cancelled WHLS Value (K) =
+CALCULATE(
+    DIVIDE(SUM(OrderBook[WHLS_Value]), 1000),
+    OrderBook[FinalStatus] = "OUT"
+)
+
+% Cancelled of WHLS Value =
+DIVIDE(
+    [Cancelled WHLS Value (K)],
+    [Total WHLS Value (K)],
+    0
+)
+
+Season Sort =
+IF(OrderBook[Season_Label] = "S1", 1,
+IF(OrderBook[Season_Label] = "S2", 2,
+IF(OrderBook[Season_Label] = "S3", 3, 4)))
