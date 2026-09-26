@@ -1,0 +1,87 @@
+// BAL_BILAN — sample measures (genericized, no proprietary naming)
+// Table: OrderBook | Columns: ItemCode, Season_Label, WHLS_Qty, RTL_Qty, VIC_Qty,
+// TotalQty, FinalStatus, TotalValue
+
+Total WHLS Value (K) =
+DIVIDE(SUM(OrderBook[WHLS_Value]), 1000)
+
+Total RTL Value (K) =
+DIVIDE(SUM(OrderBook[RTL_Value]), 1000)
+
+Total Distinct Items =
+DISTINCTCOUNT(OrderBook[ItemCode])
+
+Cancelled WHLS Units =
+CALCULATE(
+    DISTINCTCOUNT(OrderBook[ItemCode]),
+    OrderBook[FinalStatus] = "OUT",
+    OrderBook[WHLS_Qty] > 0
+)
+
+Total WHLS Units =
+CALCULATE(
+    DISTINCTCOUNT(OrderBook[ItemCode]),
+    OrderBook[WHLS_Qty] > 0
+)
+
+% Cancelled WHLS =
+DIVIDE(
+    [Cancelled WHLS Units],
+    [Total WHLS Units],
+    0
+)
+
+Kept Items Total =
+CALCULATE(
+    DISTINCTCOUNT(OrderBook[ItemCode]),
+    OrderBook[FinalStatus] = "KEEP"
+)
+
+Serve-From-Stock Items =
+CALCULATE(
+    DISTINCTCOUNT(OrderBook[ItemCode]),
+    OrderBook[FinalStatus] = "SERVE"
+)
+
+Cancelled WHLS Value (K) =
+CALCULATE(
+    DIVIDE(SUM(OrderBook[WHLS_Value]), 1000),
+    OrderBook[FinalStatus] = "OUT"
+)
+
+% Cancelled of WHLS Value =
+DIVIDE(
+    [Cancelled WHLS Value (K)],
+    [Total WHLS Value (K)],
+    0
+)
+
+Season Sort =
+IF(OrderBook[Season_Label] = "S1", 1,
+IF(OrderBook[Season_Label] = "S2", 2,
+IF(OrderBook[Season_Label] = "S3", 3, 4)))
+
+// Category-specific wholesale-only exposure — same pattern reused per category
+// so each product team can see just their own slice without a page-level filter
+Shoes WHLS-Only Value (K) =
+CALCULATE(
+    DIVIDE(SUM(OrderBook[WHLS_Value]), 1000),
+    OrderBook[RTL_Qty] = 0,
+    OrderBook[VIC_Qty] = 0,
+    OrderBook[Category] = "Shoes"
+)
+
+// Items sitting below minimum-order-quantity threshold, WHLS channel only —
+// flags what still needs a production decision before the cutoff
+WHLS-Only Below MOQ =
+CALCULATE(
+    DISTINCTCOUNT(OrderBook[ItemCode]),
+    OrderBook[RTL_Qty] = 0,
+    OrderBook[TotalQty] < OrderBook[MOQ]
+)
+
+Served-From-Stock Units =
+CALCULATE(
+    SUM(OrderBook[TotalQty]),
+    OrderBook[FinalStatus] = "SERVE"
+)

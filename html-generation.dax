@@ -1,0 +1,107 @@
+// BAL_BILAN — HTML-generation measures (genericized)
+//
+// These measures don't just calculate a number — they return a full HTML string,
+// consumed by a custom "HTML Content" visual to render layouts native Power BI
+// visuals can't (a milestone stepper, a calendar grid, a responsive card grid).
+// Config tables (key/value pairs) drive titles/dates so the same measure works
+// across seasons without editing the DAX.
+
+// ---------------------------------------------------------------------------
+// 1. Milestone stepper + event calendar, rendered as one HTML page
+// Tables: Milestones (Milestone, Estimated, Actual, Note, SortOrder)
+//         EventCalendar (EventCode, Description, TargetInStore, TargetCDC, SortOrder)
+//         PageConfig (Key, Value) — free-text labels/notes editable without touching DAX
+// ---------------------------------------------------------------------------
+Timeline HTML =
+VAR _note     = MAXX(FILTER(PageConfig, PageConfig[Key] = "TL_NOTE"), PageConfig[Value])
+VAR _deadline = MAXX(FILTER(PageConfig, PageConfig[Key] = "KD_DEADLINE"), PageConfig[Value])
+VAR _obj1     = MAXX(FILTER(PageConfig, PageConfig[Key] = "OBJ_1"), PageConfig[Value])
+VAR _obj2     = MAXX(FILTER(PageConfig, PageConfig[Key] = "OBJ_2"), PageConfig[Value])
+
+VAR _milestones =
+    CONCATENATEX(
+        Milestones,
+        VAR _est        = Milestones[Estimated]
+        VAR _act        = Milestones[Actual]
+        VAR _isLate     = _est <> _act
+        VAR _dotClass   = IF(_isLate, "ms-dot late", "ms-dot ok")
+        VAR _badgeText  = IF(_isLate, "Late", "On time")
+        VAR _noteHtml   = IF(Milestones[Note] <> "", "<div class='ms-note'>" & Milestones[Note] & "</div>", "")
+        VAR _isLast     = Milestones[SortOrder] = MAXX(Milestones, Milestones[SortOrder])
+        VAR _connector  = IF(_isLast, "", "<div class='ms-connector'></div>")
+        RETURN
+            "<div class='ms-row'>" &
+                "<div class='ms-name-col'><span class='ms-name'>" & Milestones[Milestone] & "</span></div>" &
+                "<div class='ms-node-wrap'><div class='" & _dotClass & "'></div>" & _connector & "</div>" &
+                "<div class='ms-info'><div class='ms-row-dates'>" &
+                    "<span class='ms-est'>Est: " & _est & "</span>" &
+                    "<span class='ms-act'>" & _act & "</span>" &
+                    "<span class='ms-badge'>" & _badgeText & "</span>" &
+                "</div>" & _noteHtml & "</div></div>",
+        "",
+        Milestones[SortOrder], ASC
+    )
+
+VAR _events =
+    "<table class='cal'>" &
+    CONCATENATEX(
+        EventCalendar,
+        "<tr><td class='ev-code'>" & EventCalendar[EventCode] & "</td>" &
+        "<td>" & EventCalendar[Description] & "</td>" &
+        "<td>" & EventCalendar[TargetInStore] & "</td>" &
+        "<td>" & EventCalendar[TargetCDC] & "</td></tr>",
+        "",
+        EventCalendar[SortOrder], ASC
+    ) & "</table>"
+
+RETURN
+"<!DOCTYPE html><html><head><style>" &
+"body{background:#0a0a0a;color:#fff;font-family:Arial,sans-serif;padding:20px}" &
+".ms-dot{width:10px;height:10px;border-radius:50%;background:#7c3aed}" &
+".ms-dot.late{background:#f59e0b}" &
+".ms-badge{font-size:10px;border-radius:3px;padding:2px 6px;background:#1a1a1a;color:#a78bfa}" &
+".cal{border-collapse:collapse;width:100%;font-size:11px}" &
+".cal td{padding:4px 8px;border-bottom:1px solid #1a1a1a}" &
+"</style></head><body>" &
+"<h3>" & _deadline & " | " & _obj1 & " · " & _obj2 & "</h3>" &
+"<p class='ms-note'>" & _note & "</p>" &
+"<div class='timeline'>" & _milestones & "</div>" &
+_events &
+"</body></html>"
+
+
+// ---------------------------------------------------------------------------
+// 2. Responsive product card grid — one card per row in the order table
+// Table: OrderBook (ItemCode, Description, Category, WHLS_Qty, RTL_Qty,
+//                    FirstFeedback, RootCause, ImageURL)
+// ---------------------------------------------------------------------------
+Product Cards HTML =
+VAR _cards =
+    CONCATENATEX(
+        OrderBook,
+        VAR _img = IF(
+            NOT ISBLANK(OrderBook[ImageURL]),
+            OrderBook[ImageURL],
+            "https://via.placeholder.com/120x110?text=No+Image"
+        )
+        VAR _feedback = IF(ISBLANK(OrderBook[FirstFeedback]), "—", OrderBook[FirstFeedback])
+        VAR _rootCause = IF(ISBLANK(OrderBook[RootCause]), "—", OrderBook[RootCause])
+        RETURN
+        "<div style='border:1px solid #ddd;border-radius:8px;padding:8px;background:#fff'>" &
+            "<img src='" & _img & "' style='width:100%;height:110px;object-fit:contain'/>" &
+            "<div style='font-size:9px;color:#888;font-family:monospace;margin-top:4px'>" & OrderBook[ItemCode] & "</div>" &
+            "<div style='font-size:10px;font-weight:600;margin:2px 0'>" & OrderBook[Description] & "</div>" &
+            "<div style='font-size:9px;color:#666'>" & OrderBook[Category] & "</div>" &
+            "<div style='border-top:1px solid #eee;margin-top:6px;padding-top:6px;font-size:9px'>" &
+                "<span style='color:#888'>WHLS: </span>" & OrderBook[WHLS_Qty] &
+                " | <span style='color:#888'>RTL: </span>" & OrderBook[RTL_Qty] &
+            "</div>" &
+            "<div style='font-size:9px;margin-top:3px'><span style='color:#888'>1st FB: </span>" & _feedback & "</div>" &
+            "<div style='font-size:9px;margin-top:3px;color:#999'>" & _rootCause & "</div>" &
+        "</div>",
+        ""
+    )
+RETURN
+"<div style='display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px;padding:12px'>" &
+_cards &
+"</div>"
