@@ -95,3 +95,9 @@ README.md
 
 - The DAX/M samples are genericized (renamed tables/columns, synthetic config
   values) to demonstrate structure and logic, not to expose the original schema
+
+## Note
+
+- Screenshots of visuals built using the data in Power BI added 
+
+
