@@ -1,6 +1,6 @@
 # BAL_BILAN — Multi-Season Order Book Dashboard (Power BI)
 
-A self-initiated Power BI dashboard built during my Supply Chain & Newness Planning
+A self-initiated Power BI dashboard built during my Supply Chain Analytics & Newness Planning
 internship at a luxury fashion house, consolidating four seasons of pre-production
 order data into a single interactive reporting tool — replacing a manual,
 spreadsheet-only reconciliation process.
